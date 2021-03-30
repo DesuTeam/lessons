@@ -1,6 +1,7 @@
 import socket
 import math
 import multiprocessing
+import functools
 
 
 def is_prime(x):
@@ -37,14 +38,14 @@ def calc_all_primes():
     for process in processes:
         process.start()
 
-    results = []
+    all_primes = []
     for i in range(0, processes_count):
-        results.extend(queue.get())
+        all_primes.extend(queue.get())
 
     for process in processes:
         process.join()
 
-    print(len(results))
+    return all_primes
 
 
 def main():
