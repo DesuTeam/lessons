@@ -16,7 +16,7 @@ def worker(queue: multiprocessing.Queue, work_range):
 
     for i in work_range:
         if is_prime(i):
-            local.append(i)
+            local.append(str(i))
 
     queue.put(local)
 
@@ -49,14 +49,13 @@ def calc_all_primes():
 
 
 def main():
-    calc_all_primes()
-    return None
+    primes = calc_all_primes()
+    primes_as_string = "\n".join(primes)
+
+    
     sock = socket.socket()
-
     sock.connect(('localhost', 9090))
-
-    for p in primes_gen(2000):
-        sock.send(str(p).encode())
+    sock.send(primes_as_string.encode())
     sock.close()
 
 
