@@ -1,6 +1,6 @@
 import socket
 import math
-import threading
+import multiprocessing
 
 
 def is_prime(x):
@@ -9,43 +9,42 @@ def is_prime(x):
             return False
     return True
 
-def worker(lock, start, end, results):
+
+def worker(queue: multiprocessing.Queue, work_range):
     local = []
 
-    for i in range(start, end):
+    for i in work_range:
         if is_prime(i):
             local.append(i)
 
-    lock.acquire()
-    results.extend(local)
-    lock.release()
+    queue.put(local)
+
 
 def calc_all_primes():
     start = 2
     end = 2000000
-    #TODO: Set number of threads dynamicly
-    threads_count = 2
+    # TODO: Set number of processes dynamically
+    processes_count = 16
 
-    lock = threading.Lock()
+    processes = []
+
+    queue = multiprocessing.Queue(maxsize=processes_count)
+    for i in range(0, processes_count):
+        range_start = int(start + (end - start) * i / processes_count)
+        range_end = int(start + (end - start) * (i + 1) / processes_count)
+        processes.append(multiprocessing.Process(target=worker, args=(queue, range(range_start, range_end))))
+
+    for process in processes:
+        process.start()
 
     results = []
+    for i in range(0, processes_count):
+        results.extend(queue.get())
 
-    threads = []
+    for process in processes:
+        process.join()
 
-    for i in range(0, threads_count):
-        range_start = int(start + (end - start) * i / threads_count)
-        range_end = int(start + (end - start) * (i+1) / threads_count)
-        threads.append(threading.Thread(target=worker, args=(lock, range_start, range_end, results)))
-
-
-    for th in threads:
-        th.start()
-
-
-    for th in threads:
-        th.join()
-
-    #print(results)
+    print(len(results))
 
 
 def main():
@@ -53,13 +52,11 @@ def main():
     return None
     sock = socket.socket()
 
-
     sock.connect(('localhost', 9090))
 
     for p in primes_gen(2000):
         sock.send(str(p).encode())
     sock.close()
-
 
 
 main()
